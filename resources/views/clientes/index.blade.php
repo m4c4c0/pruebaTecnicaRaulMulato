@@ -325,7 +325,6 @@
                     <label for="proveedor_municipio" class="form-label">Municipio</label>
                     <select class="form-select" id="proveedor_municipio" name="cod_municipio" required>
                         <option value="">-- Seleccione --</option>
-                        <!-- Opciones de municipio -->
                     </select>
                 </div>
                 
@@ -367,16 +366,17 @@
         </select>
         <span class="ms-2">registros</span>
     </div>
+
     <div class="input-group" style="width: 300px;">
-        <input type="text" class="form-control" placeholder="Buscar..." id="searchInput">
-        <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+        <input type="text" id="buscar" class="form-control" placeholder="Buscar cliente...">
+        <button class="btn btn-outline-secondary" type="button" id="buscar">
             <i class="bi bi-search"></i>
         </button>
     </div>
 </div>
 
 <div class="table-responsive">
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover"  id="tabla-clientes">
         <thead class="table-light">
             <tr>
                 <th>Razón Social</th>
@@ -449,9 +449,7 @@ $(document).ready(function() {
     $(document).on('change', '[id$="_departamento"]', function() {
         const codDepartamento = $(this).val();
         const municipioSelect = $(this).closest('.row').find('select[name="cod_municipio"]');
-        
         municipioSelect.html('<option value="">-- Seleccione --</option>');
-        
         if (codDepartamento) {
             $.get(`/municipios/${codDepartamento}`, function(municipios) {
                 municipios.forEach(function(municipio) {
@@ -472,7 +470,6 @@ $(document).ready(function() {
         const isEdit = form.data('id') !== undefined;
         const url = isEdit ? `/clientes/${form.data('id')}` : '/clientes';
         const method = isEdit ? 'PUT' : 'POST';
-        
         $.ajax({
             url: url,
             type: method,
@@ -549,7 +546,6 @@ $(document).ready(function() {
     // Eliminar cliente
     $(document).on('click', '.delete-btn', function() {
         const id = $(this).data('id');
-        
         if (confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
             $.ajax({
                 url: `/clientes/${id}`,
@@ -574,7 +570,6 @@ $(document).ready(function() {
     $('[name="telefono"]').on('blur', function() {
         const telefono = $(this).val();
         const regex = /^\d{4}-\d{4}$/;
-        
         if (telefono && !regex.test(telefono)) {
             $(this).addClass('is-invalid');
             $(this).after('<div class="invalid-feedback">El formato debe ser ####-#### (ej: 1111-1111)</div>');
@@ -582,6 +577,51 @@ $(document).ready(function() {
             $(this).removeClass('is-invalid');
             $(this).next('.invalid-feedback').remove();
         }
+    });
+
+    // Buscar
+    $('#buscar').on('keyup', function() {
+        let query = $(this).val().trim();
+        if (query === '') {
+            location.reload();
+            return;
+        }
+        $.ajax({
+            url: '{{ route("clientes.buscar") }}',
+            type: 'GET',
+            data: { query: query },
+            success: function(data) {
+                let filas = '';
+                if (data.length === 0) {
+                    filas = '<tr><td colspan="7" class="text-center">No se encontraron resultados</td></tr>';
+                } else {
+                    data.forEach(cliente => {
+                        filas += `
+                            <tr id="registro-${cliente.id}">
+                                <td>${cliente.nombre || '-'}</td>
+                                <td>${cliente.nombre_comercial || '-'}</td>
+                                <td>${cliente.direccion || '-'}</td>
+                                <td>${cliente.dui_nit || '-'}</td>
+                                <td>${cliente.nrc || 'N/A'}</td>
+                                <td>${cliente.correo || '-'}</td>
+                                <td class="action-buttons">
+                                    <button class="btn btn-sm btn-primary edit-btn" data-id="${cliente.id}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger delete-btn" data-id="${cliente.id}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                $('#registrosTableBody').html(filas);
+            },
+            error: function(xhr) {
+                toastr.error('Error al realizar la búsqueda');
+            }
+        });
     });
 });
 
