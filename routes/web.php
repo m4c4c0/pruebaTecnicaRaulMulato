@@ -16,3 +16,5 @@ Route::get('/municipios/{departamento}', function($codDepartamento) {
     $municipios = Municipio::where('cod_mh_departamento', $codDepartamento)->get();
     return response()->json($municipios);
 });
+
+Route::get('/clientes/buscar', [ClienteController::class, 'buscar'])->name('clientes.buscar');
