@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Validator;
 
 class ClienteController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $clientes = Cliente::orderBy('id')->paginate(10);
+        $clientes = Cliente::all();
         $departamentos = Departamento::where('estado', '1')->get();
         $paises = Paises::all();
         $contribuyentes = Contribuyente::all();
@@ -24,6 +24,20 @@ class ClienteController extends Controller
         $giros = Actividad::all();
         return view('clientes.index', compact('clientes', 'departamentos', 'paises', 'contribuyentes', 'documentos', 'giros'));
     }
+
+    public function buscar(Request $request)
+    {
+        $query = $request->input('query');
+        $clientes = Cliente::where('nombre', 'LIKE', "%{$query}%")
+            ->orWhere('nombre_comercial', 'LIKE', "%{$query}%")
+            ->orWhere('dui_nit', 'LIKE', "%{$query}%")
+            ->orWhere('nrc', 'LIKE', "%{$query}%")
+            ->orWhere('correo', 'LIKE', "%{$query}%")
+            ->orWhere('direccion', 'LIKE', "%{$query}%")
+            ->get();
+        return response()->json($clientes);
+    }
+
 
     public function store(Request $request)
     {
@@ -72,7 +86,6 @@ class ClienteController extends Controller
                 $rules['ciudad'] = 'nullable|string|max:100';
                 break;
         }
-        
         $messages = [
             'required' => 'El campo :attribute es obligatorio.',
             'in' => 'El valor seleccionado para :attribute no es válido.',
